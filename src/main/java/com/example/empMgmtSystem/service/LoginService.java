@@ -5,7 +5,9 @@ import com.example.empMgmtSystem.dto.LoginResponse;
 import com.example.empMgmtSystem.entity.Employee;
 import com.example.empMgmtSystem.enums.EmployeeStatus;
 import com.example.empMgmtSystem.repository.EmployeeRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -32,12 +34,22 @@ public class LoginService {
                         new RuntimeException("Employee not found: " + employeeId)
                 );
 
-        if (employee.getEmployeeStatus() == null ||
-                employee.getEmployeeStatus() != EmployeeStatus.ACTIVE) {
+        if (employee.getEmployeeStatus() != EmployeeStatus.ACTIVE) {
 
-            throw new RuntimeException("Employee is not active");
+            String hrName = employee.getAssignedHR() != null
+                    ? employee.getAssignedHR().getEmployeeName()
+                    : null;
+
+            String message = (hrName != null && !hrName.isBlank())
+                    ? "Your account is currently inactive. Please contact your Assigned HR. "
+                    + hrName + " for assistance."
+                    : "Your account is currently inactive. Please contact your HR department for assistance.";
+
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    message
+            );
         }
-
         LoginResponse loginResponse = new LoginResponse();
 
         loginResponse.setEmployeeId(employee.getEmployeeId());
